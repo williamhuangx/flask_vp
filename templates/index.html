@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 门户网站{% endblock %}
+
+{% block content %}
+    <!-- 英雄区 -->
+    <section class="hero">
+        <div class="container">
+            <h1>欢迎来到门户网站</h1>
+            <p>您的一站式信息和服务平台</p>
+            <a href="{{ url_for('about') }}" class="cta-btn">了解更多</a>
+        </div>
+    </section>
+
+    <!-- 特性区域 -->
+    <section class="features">
+        <div class="container">
+            <h2>我们的服务</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>信息资讯</h3>
+                    <p>提供最新、最全面的行业资讯和新闻动态，帮助您及时了解市场变化。</p>
+                </div>
+                <div class="feature-card">
+                    <h3>在线服务</h3>
+                    <p>便捷的在线服务平台，让您足不出户就能办理各种业务，节省时间和精力。</p>
+                </div>
+                <div class="feature-card">
+                    <h3>社区互动</h3>
+                    <p>活跃的社区交流平台，让您与其他用户分享经验、交流想法，共同成长。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
