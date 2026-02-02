@@ -33,7 +33,15 @@ with app.app_context():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # 从数据库获取最新的联系消息
+    try:
+        latest_messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).limit(5).all()
+        print(f"成功获取 {len(latest_messages)} 条最新消息")
+    except Exception as e:
+        print(f"获取消息失败: {e}")
+        latest_messages = []
+    
+    return render_template('index.html', latest_messages=latest_messages)
 
 @app.route('/about')
 def about():
