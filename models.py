@@ -189,7 +189,7 @@ class Order:
             %s, %s, %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
-        )
+        ) RETURNING id
         """
         params = (
             user_id,
@@ -219,7 +219,7 @@ class Order:
             order_data.get('description'),
             order_data.get('image_data'),
             order_data.get('image_content_type')
-        ) RETURNING id
+        )
         return db.execute(query, params)
     
     @staticmethod
@@ -467,15 +467,4 @@ class Order:
 
         result = db.fetch_one(query, params)
         return result['total'] if result else 0
-
-    @staticmethod
-    def update_status(order_id, user_id, status):
-        """只更新订单状态，不影响其他字段"""
-        if user_id is not None:
-            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s AND user_id = %s RETURNING id"
-            params = (status, order_id, user_id)
-        else:
-            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s RETURNING id"
-            params = (status, order_id)
-        return db.execute(query, params)
 
