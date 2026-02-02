@@ -698,3 +698,6 @@ if __name__ == '__main__':
     # Start Flask application immediately
     debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
     app.run(host='0.0.0.0', port=5000, debug=debug_mode)
+
+# WSGI application instance for Vercel
+gunicorn_app = app

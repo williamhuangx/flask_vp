@@ -26,9 +26,10 @@ class Database:
         """创建新的数据库连接"""
         # 解析连接URI
         import re
-        match = re.match(r'postgresql://(.*?):(.*?)@(.*?)/(.*)', Config.DB_URI)
+        # 改进的正则表达式，能够处理包含查询参数的连接字符串
+        match = re.match(r'postgresql://(.*?):(.*?)@(.*?)/(.*?)(\?.*)?$', Config.DB_URI)
         if match:
-            user, password, host, database = match.groups()
+            user, password, host, database, _ = match.groups()
             # 移除可能的端口号
             if ':' in host:
                 host = host.split(':')[0]
