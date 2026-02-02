@@ -8,7 +8,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     
     # PostgreSQL 配置
-    # 从环境变量读取，使用 env.local 中的配置
+    # 从环境变量 DATABASE_URL 读取，使用 env.local 中的配置
     DB_URI = os.environ.get('DATABASE_URL')
     
     # 如果没有设置 DATABASE_URL，则使用默认值
