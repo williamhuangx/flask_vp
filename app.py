@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import os
@@ -66,6 +66,54 @@ def contact():
         
         return render_template('contact.html', success=True)
     return render_template('contact.html')
+
+@app.route('/admin')
+def admin():
+    # 从数据库获取所有联系消息
+    try:
+        all_messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+        print(f"成功获取 {len(all_messages)} 条消息")
+    except Exception as e:
+        print(f"获取消息失败: {e}")
+        all_messages = []
+    
+    return render_template('admin.html', messages=all_messages)
+
+@app.route('/delete/<int:message_id>')
+def delete_message(message_id):
+    # 删除指定ID的消息
+    try:
+        message = ContactMessage.query.get(message_id)
+        if message:
+            db.session.delete(message)
+            db.session.commit()
+            print(f"成功删除消息 ID: {message_id}")
+    except Exception as e:
+        print(f"删除消息失败: {e}")
+    
+    return redirect(url_for('admin'))
+
+@app.route('/edit/<int:message_id>', methods=['GET', 'POST'])
+def edit_message(message_id):
+    # 编辑指定ID的消息
+    try:
+        message = ContactMessage.query.get(message_id)
+        if not message:
+            return redirect(url_for('admin'))
+        
+        if request.method == 'POST':
+            # 更新消息内容
+            message.name = request.form.get('name')
+            message.email = request.form.get('email')
+            message.message = request.form.get('message')
+            db.session.commit()
+            print(f"成功更新消息 ID: {message_id}")
+            return redirect(url_for('admin'))
+    except Exception as e:
+        print(f"编辑消息失败: {e}")
+        return redirect(url_for('admin'))
+    
+    return render_template('edit.html', message=message)
 
 if __name__ == '__main__':
     app.run(debug=True)

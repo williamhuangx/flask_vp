@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}编辑消息 - 门户网站{% endblock %}
+
+{% block content %}
+    <section class="edit-page">
+        <div class="container">
+            <h1>编辑消息</h1>
+            
+            <form class="edit-form" method="POST">
+                <div class="form-group">
+                    <label for="name">姓名</label>
+                    <input type="text" id="name" name="name" value="{{ message.name }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email" value="{{ message.email }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">消息内容</label>
+                    <textarea id="message" name="message" rows="5" required>{{ message.message }}</textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">保存更改</button>
+                    <a href="{{ url_for('admin') }}" class="cancel-btn">取消</a>
+                </div>
+            </form>
+        </div>
+    </section>
+{% endblock %}

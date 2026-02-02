@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}管理页面 - 门户网站{% endblock %}
+
+{% block content %}
+    <section class="admin-page">
+        <div class="container">
+            <h1>消息管理</h1>
+            
+            {% if messages %}
+                <table class="messages-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>邮箱</th>
+                            <th>消息内容</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for message in messages %}
+                            <tr>
+                                <td>{{ message.id }}</td>
+                                <td>{{ message.name }}</td>
+                                <td>{{ message.email }}</td>
+                                <td>{{ message.message[:100] }}{% if message.message|length > 100 %}...{% endif %}</td>
+                                <td>{{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_message', message_id=message.id) }}" class="edit-btn">编辑</a>
+                                    <a href="{{ url_for('delete_message', message_id=message.id) }}" class="delete-btn" onclick="return confirm('确定要删除这条消息吗？');">删除</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-messages">暂无消息</p>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}
