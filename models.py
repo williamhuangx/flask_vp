@@ -1,5 +1,4 @@
 import psycopg2
-from psycopg2 import OperationalError
 from config import Config
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -24,32 +23,13 @@ class Database:
 
     def _create_connection(self):
         """创建新的数据库连接"""
-        # 解析连接URI
-        import re
-        # 改进的正则表达式，能够处理包含查询参数的连接字符串
-        match = re.match(r'postgresql://(.*?):(.*?)@(.*?)/(.*?)(\?.*)?$', Config.DB_URI)
-        if match:
-            user, password, host, database, _ = match.groups()
-            # 移除可能的端口号
-            if ':' in host:
-                host = host.split(':')[0]
-        else:
-            # 使用默认值
-            user = 'neondb_owner'
-            password = 'npg_0lkJQcK6pVUv'
-            host = 'ep-curly-cloud-a1z3ive4-pooler.ap-southeast-1.aws.neon.tech'
-            database = 'neondb'
-
         try:
             self.connection = psycopg2.connect(
-                host=host,
-                user=user,
-                password=password,
-                dbname=database,
-                sslmode='require',
-                connect_timeout=10
+                Config.DB_URI,
+                connect_timeout=10  # 添加连接超时：10秒
             )
-            # 设置自动提交
+            # PostgreSQL 需要设置 autocommit 或手动提交
+            # 这里设置为 autocommit 模式
             self.connection.autocommit = True
         except Exception as e:
             print(f"数据库连接失败: {e}")
@@ -57,14 +37,17 @@ class Database:
 
     def close(self):
         if self.connection:
-            self.connection.close()
-            self.connection = None
+            try:
+                self.connection.close()
+            except Exception:
+                pass
+            finally:
+                self.connection = None
 
     def execute(self, query, params=None):
         conn = self.connect()
         if not conn:
             return None
-        
         try:
             with conn.cursor() as cursor:
                 cursor.execute(query, params or ())
@@ -79,11 +62,12 @@ class Database:
         conn = self.connect()
         if not conn:
             return []
-        
         try:
-            with conn.cursor(dictionary=True) as cursor:
+            with conn.cursor() as cursor:
                 cursor.execute(query, params or ())
-                return cursor.fetchall()
+                # 将结果转换为字典列表
+                columns = [desc[0] for desc in cursor.description]
+                return [dict(zip(columns, row)) for row in cursor.fetchall()]
         except Exception as e:
             print(f"执行SQL失败: {e}")
             print(f"SQL: {query}")
@@ -94,11 +78,15 @@ class Database:
         conn = self.connect()
         if not conn:
             return None
-        
         try:
-            with conn.cursor(dictionary=True) as cursor:
+            with conn.cursor() as cursor:
                 cursor.execute(query, params or ())
-                return cursor.fetchone()
+                row = cursor.fetchone()
+                if row:
+                    # 将结果转换为字典
+                    columns = [desc[0] for desc in cursor.description]
+                    return dict(zip(columns, row))
+                return None
         except Exception as e:
             print(f"执行SQL失败: {e}")
             print(f"SQL: {query}")
@@ -112,7 +100,7 @@ class User:
     @staticmethod
     def create(username, password):
         hashed = generate_password_hash(password)
-        query = "INSERT INTO users (username, password) VALUES (%s, %s) RETURNING id"
+        query = "INSERT INTO users (username, password) VALUES (%s, %s)"
         return db.execute(query, (username, hashed))
 
     @staticmethod
@@ -150,13 +138,13 @@ class User:
     @staticmethod
     def activate_user(user_id):
         """Activate a user account"""
-        query = "UPDATE users SET is_active = %s WHERE id = %s RETURNING id"
+        query = "UPDATE users SET is_active = %s WHERE id = %s"
         return db.execute(query, (True, user_id))
 
     @staticmethod
     def deactivate_user(user_id):
         """Deactivate a user account"""
-        query = "UPDATE users SET is_active = %s WHERE id = %s RETURNING id"
+        query = "UPDATE users SET is_active = %s WHERE id = %s"
         return db.execute(query, (False, user_id))
 
     @staticmethod
@@ -166,8 +154,6 @@ class User:
 
     @staticmethod
     def verify_password(user, password):
-        if not user or not user.get('password') or not user['password']:
-            return False
         return check_password_hash(user['password'], password)
 
     @staticmethod
@@ -190,7 +176,7 @@ class Order:
             %s, %s, %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW()
-        ) RETURNING id
+        )
         """
         params = (
             user_id,
@@ -277,10 +263,10 @@ class Order:
     def update_status(order_id, user_id, status):
         """只更新订单状态，不影响其他字段"""
         if user_id is not None:
-            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s AND user_id = %s RETURNING id"
+            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s AND user_id = %s"
             params = (status, order_id, user_id)
         else:
-            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s RETURNING id"
+            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s"
             params = (status, order_id)
         return db.execute(query, params)
 
@@ -468,4 +454,15 @@ class Order:
 
         result = db.fetch_one(query, params)
         return result['total'] if result else 0
+
+    @staticmethod
+    def update_status(order_id, user_id, status):
+        """只更新订单状态，不影响其他字段"""
+        if user_id is not None:
+            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s AND user_id = %s"
+            params = (status, order_id, user_id)
+        else:
+            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s"
+            params = (status, order_id)
+        return db.execute(query, params)
 
