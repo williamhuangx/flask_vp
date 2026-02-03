@@ -44,10 +44,7 @@ def init_db():
         """
         result = db.fetch_one(check_init)
         if result and result['cnt'] > 0:
-            print("Database already initialized, skipping...")
             return
-
-        print("Initializing PostgreSQL database...")
 
         # Create users table
         create_users_table = """
@@ -139,18 +136,16 @@ def init_db():
                     try:
                         db.execute(query)
                     except Exception as e:
-                        # Column might already have the correct type
-                        print(f"Note: {e}")
+                        pass
             except Exception as e:
-                print(f"Error updating column types: {e}")
+                pass
 
             # Add image_data and image_content_type columns if they don't exist
             try:
                 db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS image_data BYTEA")
                 db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS image_content_type VARCHAR(100)")
-                print("Added image_data and image_content_type columns")
             except Exception as e:
-                print(f"Note: {e}")
+                pass
 
         # Ensure admin user exists and is properly configured
         admin = User.find_by_username('admin') or User.create('admin', 'admin123')
@@ -180,7 +175,6 @@ def init_db():
                 'fac': admin.get('fac') or admin_defaults['fac'],
                 'is_active': True
             })
-            print("Admin user configured successfully")
 
         # Mark database as initialized
         create_init_table = """
@@ -190,11 +184,8 @@ def init_db():
         )
         """
         db.execute(create_init_table)
-
-        print("PostgreSQL database initialized successfully")
     except Exception as e:
-        print(f"PostgreSQL database initialization failed: {e}")
-        print("Application will continue, but some features may not work")
+        pass
 
 
 def login_required(f):
@@ -702,12 +693,10 @@ def order_delete(order_id):
 if __name__ == '__main__':
     # Initialize database in background thread to avoid blocking startup
     def bg_init():
-        print("Starting background database initialization...")
         try:
             init_db()
-            print("Background database initialization completed")
         except Exception as e:
-            print(f"Background database initialization error: {e}")
+            pass
 
     init_thread = threading.Thread(target=bg_init, daemon=True)
     init_thread.start()
