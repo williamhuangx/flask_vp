@@ -21,4 +21,5 @@ class Config:
         PG_USER = os.environ.get('PG_USER', 'postgres')
         PG_PASSWORD = os.environ.get('PG_PASSWORD', 'postgres')
         PG_DB = os.environ.get('PG_DATABASE', 'order_db')
-        DB_URI = f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}:{PG_PORT}/{PG_DB}"
+        PG_SSLMODE = os.environ.get('PG_SSLMODE', 'require')
+        DB_URI = f"postgresql://{PG_USER}:{PG_PASSWORD}@{PG_HOST}:{PG_PORT}/{PG_DB}?sslmode={PG_SSLMODE}"
