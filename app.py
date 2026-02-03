@@ -1,7 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
 import os
 import threading
 import traceback
+import sys
 from functools import wraps
 from werkzeug.security import generate_password_hash
 from models import db, User, Order
@@ -10,6 +11,13 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# 添加请求日志
+@app.before_request
+def log_request():
+    print(f"[DEBUG] Request: {request.method} {request.path}", file=sys.stderr)
+    if request.method == 'POST':
+        print(f"[DEBUG] Form data: {dict(request.form)}", file=sys.stderr)
 
 # 订单状态常量
 ORDER_STATUS_RECEIVED = 'received'  # 收单
@@ -38,6 +46,9 @@ ORDER_STATUS_MAP_EN = {
 def init_db():
     """Initialize database tables - only runs once"""
     try:
+        print(f"[DEBUG] Starting database initialization...", file=sys.stderr)
+        print(f"[DEBUG] DB_URI: {Config.DB_URI[:50]}..." if len(Config.DB_URI) > 50 else f"[DEBUG] DB_URI: {Config.DB_URI}", file=sys.stderr)
+
         # 检查初始化标记，避免重复执行
         check_init = """
         SELECT COUNT(*) as cnt FROM information_schema.tables
@@ -48,7 +59,7 @@ def init_db():
             print("Database already initialized, skipping...")
             return
 
-        print("Initializing PostgreSQL database...")
+        print("Initializing PostgreSQL database...", file=sys.stderr)
 
         # Create users table
         create_users_table = """
@@ -192,10 +203,11 @@ def init_db():
         """
         db.execute(create_init_table)
 
-        print("PostgreSQL database initialized successfully")
+        print("PostgreSQL database initialized successfully", file=sys.stderr)
     except Exception as e:
-        print(f"PostgreSQL database initialization failed: {e}")
-        print("Application will continue, but some features may not work")
+        print(f"PostgreSQL database initialization failed: {e}", file=sys.stderr)
+        print(f"Traceback: {traceback.format_exc()}", file=sys.stderr)
+        print("Application will continue, but some features may not work", file=sys.stderr)
 
 
 def login_required(f):
@@ -716,13 +728,18 @@ def order_delete(order_id):
 # 添加全局错误处理器
 @app.errorhandler(Exception)
 def handle_exception(e):
-    # 记录错误详情
-    print(f"Error occurred: {str(e)}")
-    print(f"Traceback: {traceback.format_exc()}")
+    # 记录错误详情到 stderr（Vercel 日志）
+    error_msg = f"Error occurred: {str(e)}\nTraceback: {traceback.format_exc()}"
+    print(error_msg, file=sys.stderr)
+    print(error_msg)  # 同时打印到 stdout
 
-    # 如果是调试模式，返回详细的错误信息
+    # 如果是调试模式或 AJAX 请求，返回详细的错误信息
     debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
-    if debug_mode:
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+
+    if is_ajax:
+        return jsonify({'error': str(e), 'traceback': traceback.format_exc()}), 500
+    elif debug_mode:
         return render_template('error.html', error=str(e), traceback=traceback.format_exc()), 500
     else:
         return render_template('error.html', error="An internal server error occurred"), 500
@@ -731,12 +748,13 @@ def handle_exception(e):
 if __name__ == '__main__':
     # Initialize database in background thread to avoid blocking startup
     def bg_init():
-        print("Starting background database initialization...")
+        print("Starting background database initialization...", file=sys.stderr)
         try:
             init_db()
-            print("Background database initialization completed")
+            print("Background database initialization completed", file=sys.stderr)
         except Exception as e:
-            print(f"Background database initialization error: {e}")
+            print(f"Background database initialization error: {e}", file=sys.stderr)
+            print(f"Traceback: {traceback.format_exc()}", file=sys.stderr)
 
     init_thread = threading.Thread(target=bg_init, daemon=True)
     init_thread.start()
