@@ -7,6 +7,7 @@ class Config:
     SECRET_KEY: str = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
 
     # Vercel PostgreSQL (Neon) 配置
+    # 注意：在生产环境中，这些值应该通过环境变量设置
     PG_HOST: str = os.environ.get('PGHOST', 'ep-patient-lab-a1isve8g-pooler.ap-southeast-1.aws.neon.tech')
     PG_DATABASE: str = os.environ.get('PGDATABASE', 'neondb')
     PG_USER: str = os.environ.get('PGUSER', 'neondb_owner')
