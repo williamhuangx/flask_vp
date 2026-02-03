@@ -9,29 +9,38 @@ class Database:
 
     def connect(self):
         # 检查连接是否存在且有效
-        if not self.connection:
-            self._create_connection()
-        else:
-            # 尝试ping连接，检查是否仍然有效
-            try:
-                self.connection.closed
-                if self.connection.closed != 0:
-                    self._create_connection()
-            except Exception:
-                # 连接失效，重新创建
+        try:
+            if not self.connection:
                 self._create_connection()
-        return self.connection
+            else:
+                # 尝试ping连接，检查是否仍然有效
+                try:
+                    self.connection.closed
+                    if self.connection.closed != 0:
+                        self._create_connection()
+                except Exception:
+                    # 连接失效，重新创建
+                    self._create_connection()
+            return self.connection
+        except Exception:
+            # 连接失败，返回None
+            self.connection = None
+            return None
 
     def _create_connection(self):
         """创建新的数据库连接"""
-        self.connection = psycopg2.connect(
-            Config.DB_URI,
-            cursor_factory=RealDictCursor,
-            connect_timeout=10  # 添加连接超时：10秒
-        )
-        # PostgreSQL 需要设置 autocommit 或手动提交
-        # 这里设置为 autocommit 模式
-        self.connection.autocommit = True
+        try:
+            self.connection = psycopg2.connect(
+                Config.DB_URI,
+                cursor_factory=RealDictCursor,
+                connect_timeout=10  # 添加连接超时：10秒
+            )
+            # PostgreSQL 需要设置 autocommit 或手动提交
+            # 这里设置为 autocommit 模式
+            self.connection.autocommit = True
+        except Exception:
+            # 连接失败，设置为None
+            self.connection = None
 
     def close(self):
         if self.connection:
@@ -40,21 +49,36 @@ class Database:
 
     def execute(self, query, params=None):
         conn = self.connect()
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.lastrowid
+        if not conn:
+            return None
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.lastrowid
+        except Exception:
+            return None
 
     def fetch_all(self, query, params=None):
         conn = self.connect()
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.fetchall()
+        if not conn:
+            return []
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchall()
+        except Exception:
+            return []
 
     def fetch_one(self, query, params=None):
         conn = self.connect()
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.fetchone()
+        if not conn:
+            return None
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchone()
+        except Exception:
+            return None
 
 # 单例数据库实例
 db = Database()

@@ -366,6 +366,10 @@ def profile():
     """User profile management"""
     user = User.find_by_id(session['user_id'])
 
+    if not user:
+        flash('User not found. Please try logging in again.', 'warning')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         logo_data, logo_content_type = user.get('logo_data'), user.get('logo_content_type')
 
@@ -390,20 +394,26 @@ def profile():
             if not is_valid:
                 flash(error_msg, 'danger')
                 return render_template('profile.html', user=user)
-            db.execute("UPDATE users SET password = %s WHERE id = %s", (generate_password_hash(new_password), user['id']))
+            try:
+                db.execute("UPDATE users SET password = %s WHERE id = %s", (generate_password_hash(new_password), user['id']))
+            except Exception:
+                flash('Failed to update password. Please try again later.', 'danger')
+                return render_template('profile.html', user=user)
 
-        User.update(user['id'], {
-            'username': user['username'],
-            'logo_data': logo_data,
-            'logo_content_type': logo_content_type,
-            'address': request.form.get('address') or '',
-            'tel': request.form.get('tel') or '',
-            'fac': request.form.get('fac') or '',
-            'is_active': user.get('is_active', False)
-        })
-
-        flash('Profile updated successfully', 'success')
-        return redirect(url_for('profile'))
+        try:
+            User.update(user['id'], {
+                'username': user['username'],
+                'logo_data': logo_data,
+                'logo_content_type': logo_content_type,
+                'address': request.form.get('address') or '',
+                'tel': request.form.get('tel') or '',
+                'fac': request.form.get('fac') or '',
+                'is_active': user.get('is_active', False)
+            })
+            flash('Profile updated successfully', 'success')
+            return redirect(url_for('profile'))
+        except Exception:
+            flash('Failed to update profile. Please try again later.', 'danger')
 
     return render_template('profile.html', user=user)
 
