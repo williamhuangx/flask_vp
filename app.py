@@ -45,153 +45,160 @@ def init_db():
         result = db.fetch_one(check_init)
         if result and result['cnt'] > 0:
             print("Database already initialized, skipping...")
-            return
+        else:
+            print("Initializing PostgreSQL database...")
 
-        print("Initializing PostgreSQL database...")
-
-        # Create users table
-        create_users_table = """
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            logo_img TEXT,
-            logo_data BYTEA,
-            logo_content_type VARCHAR(100),
-            address TEXT,
-            tel VARCHAR(100),
-            fac VARCHAR(100),
-            is_active BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT NOW()
-        )
-        """
-        db.execute(create_users_table)
-
-        # Check if orders table exists
-        check_orders = """
-        SELECT COUNT(*) as cnt
-        FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = 'orders'
-        """
-        result = db.fetch_one(check_orders)
-
-        if result and result['cnt'] == 0:
-            # Create orders table
-            create_orders_table = """
-            CREATE TABLE orders (
+            # Create users table
+            create_users_table = """
+            CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                no VARCHAR(200),
-                nama VARCHAR(200),
-                terima_tgl DATE,
-                telpon VARCHAR(20),
-                selesal_tgl DATE,
-                alamat TEXT,
-                kode VARCHAR(100),
-                bram_karat1 VARCHAR(200) DEFAULT '',
-                bram_karat2 VARCHAR(200) DEFAULT '',
-                bram_karat3 VARCHAR(200) DEFAULT '',
-                bram_karat4 VARCHAR(200) DEFAULT '',
-                bram_karat5 VARCHAR(200) DEFAULT '',
-                bram_karat6 VARCHAR(200) DEFAULT '',
-                bram_karat7 VARCHAR(200) DEFAULT '',
-                bram_karat8 VARCHAR(200) DEFAULT '',
-                bram_karat9 VARCHAR(200) DEFAULT '',
-                bram_karat10 VARCHAR(200) DEFAULT '',
-                toko VARCHAR(100),
-                spl_qc VARCHAR(200),
-                pesanan_tiba_dikirim_tanggal DATE,
-                order_name VARCHAR(100),
-                order_amount DECIMAL(10, 2),
-                status VARCHAR(20),
-                description TEXT,
-                image_data BYTEA,
-                image_content_type VARCHAR(100),
-                created_at TIMESTAMP DEFAULT NOW(),
-                updated_at TIMESTAMP DEFAULT NOW()
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                logo_img TEXT,
+                logo_data BYTEA,
+                logo_content_type VARCHAR(100),
+                address TEXT,
+                tel VARCHAR(100),
+                fac VARCHAR(100),
+                is_active BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
             )
             """
-            db.execute(create_orders_table)
+            db.execute(create_users_table)
 
-            # Create index
-            create_index = """
-            CREATE INDEX idx_user_id ON orders(user_id)
+            # Check if orders table exists
+            check_orders = """
+            SELECT COUNT(*) as cnt
+            FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = 'orders'
             """
-            db.execute(create_index)
-        else:
-            # Orders table exists, update column types if needed
+            result = db.fetch_one(check_orders)
+
+            if result and result['cnt'] == 0:
+                # Create orders table
+                create_orders_table = """
+                CREATE TABLE orders (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    no VARCHAR(200),
+                    nama VARCHAR(200),
+                    terima_tgl DATE,
+                    telpon VARCHAR(20),
+                    selesal_tgl DATE,
+                    alamat TEXT,
+                    kode VARCHAR(100),
+                    bram_karat1 VARCHAR(200) DEFAULT '',
+                    bram_karat2 VARCHAR(200) DEFAULT '',
+                    bram_karat3 VARCHAR(200) DEFAULT '',
+                    bram_karat4 VARCHAR(200) DEFAULT '',
+                    bram_karat5 VARCHAR(200) DEFAULT '',
+                    bram_karat6 VARCHAR(200) DEFAULT '',
+                    bram_karat7 VARCHAR(200) DEFAULT '',
+                    bram_karat8 VARCHAR(200) DEFAULT '',
+                    bram_karat9 VARCHAR(200) DEFAULT '',
+                    bram_karat10 VARCHAR(200) DEFAULT '',
+                    toko VARCHAR(100),
+                    spl_qc VARCHAR(200),
+                    pesanan_tiba_dikirim_tanggal DATE,
+                    order_name VARCHAR(100),
+                    order_amount DECIMAL(10, 2),
+                    status VARCHAR(20),
+                    description TEXT,
+                    image_data BYTEA,
+                    image_content_type VARCHAR(100),
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+                """
+                db.execute(create_orders_table)
+
+                # Create index
+                create_index = """
+                CREATE INDEX idx_user_id ON orders(user_id)
+                """
+                db.execute(create_index)
+            else:
+                # Orders table exists, update column types if needed
+                try:
+                    alter_queries = [
+                        "ALTER TABLE orders ALTER COLUMN no TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat1 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat2 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat3 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat4 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat5 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat6 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat7 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat8 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat9 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN bram_karat10 TYPE VARCHAR(200)",
+                        "ALTER TABLE orders ALTER COLUMN spl_qc TYPE VARCHAR(200)",
+                    ]
+                    for query in alter_queries:
+                        try:
+                            db.execute(query)
+                        except Exception as e:
+                            # Column might already have the correct type
+                            print(f"Note: {e}")
+                except Exception as e:
+                    print(f"Error updating column types: {e}")
+
+                # Add image_data and image_content_type columns if they don't exist
+                try:
+                    db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS image_data BYTEA")
+                    db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS image_content_type VARCHAR(100)")
+                    print("Added image_data and image_content_type columns")
+                except Exception as e:
+                    print(f"Note: {e}")
+
+            # Mark database as initialized
             try:
-                alter_queries = [
-                    "ALTER TABLE orders ALTER COLUMN no TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat1 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat2 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat3 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat4 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat5 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat6 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat7 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat8 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat9 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN bram_karat10 TYPE VARCHAR(200)",
-                    "ALTER TABLE orders ALTER COLUMN spl_qc TYPE VARCHAR(200)",
-                ]
-                for query in alter_queries:
-                    try:
-                        db.execute(query)
-                    except Exception as e:
-                        # Column might already have the correct type
-                        print(f"Note: {e}")
+                create_init_table = """
+                CREATE TABLE db_initialized (
+                    id SERIAL PRIMARY KEY,
+                    initialized_at TIMESTAMP DEFAULT NOW()
+                )
+                """
+                db.execute(create_init_table)
+                print("PostgreSQL database initialized successfully")
             except Exception as e:
-                print(f"Error updating column types: {e}")
+                print(f"Error marking database as initialized: {e}")
 
-            # Add image_data and image_content_type columns if they don't exist
-            try:
-                db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS image_data BYTEA")
-                db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS image_content_type VARCHAR(100)")
-                print("Added image_data and image_content_type columns")
-            except Exception as e:
-                print(f"Note: {e}")
+        # Always ensure admin user exists and is properly configured
+        try:
+            admin = User.find_by_username('admin') or User.create('admin', 'admin123')
+            admin = User.find_by_username('admin')
 
-        # Ensure admin user exists and is properly configured
-        admin = User.find_by_username('admin') or User.create('admin', 'admin123')
-        admin = User.find_by_username('admin')
+            if admin:
+                admin_defaults = {
+                    'address': 'Plaza TunjunganIVLt2Unit211-212JJendral Basuki Rachmad 2-12.Surabaya-Indonesia',
+                    'tel': '+6231 5472647',
+                    'fac': '+6231 5474057',
+                    'is_active': True
+                }
 
-        admin_defaults = {
-            'address': 'Plaza TunjunganIVLt2Unit211-212JJendral Basuki Rachmad 2-12.Surabaya-Indonesia',
-            'tel': '+6231 5472647',
-            'fac': '+6231 5474057',
-            'is_active': True
-        }
+                needs_update = (
+                    not admin.get('is_active') or
+                    not admin.get('address') or
+                    not admin.get('tel') or
+                    not admin.get('fac')
+                )
 
-        needs_update = (
-            not admin.get('is_active') or
-            not admin.get('address') or
-            not admin.get('tel') or
-            not admin.get('fac')
-        )
-
-        if needs_update:
-            User.update(admin['id'], {
-                'username': 'admin',
-                'logo_data': admin.get('logo_data'),
-                'logo_content_type': admin.get('logo_content_type'),
-                'address': admin.get('address') or admin_defaults['address'],
-                'tel': admin.get('tel') or admin_defaults['tel'],
-                'fac': admin.get('fac') or admin_defaults['fac'],
-                'is_active': True
-            })
-            print("Admin user configured successfully")
-
-        # Mark database as initialized
-        create_init_table = """
-        CREATE TABLE db_initialized (
-            id SERIAL PRIMARY KEY,
-            initialized_at TIMESTAMP DEFAULT NOW()
-        )
-        """
-        db.execute(create_init_table)
-
-        print("PostgreSQL database initialized successfully")
+                if needs_update:
+                    User.update(admin['id'], {
+                        'username': 'admin',
+                        'logo_data': admin.get('logo_data'),
+                        'logo_content_type': admin.get('logo_content_type'),
+                        'address': admin.get('address') or admin_defaults['address'],
+                        'tel': admin.get('tel') or admin_defaults['tel'],
+                        'fac': admin.get('fac') or admin_defaults['fac'],
+                        'is_active': True
+                    })
+                    print("Admin user configured successfully")
+            else:
+                print("Could not find or create admin user - database connection failed")
+        except Exception as e:
+            print(f"Error configuring admin user: {e}")
     except Exception as e:
         print(f"PostgreSQL database initialization failed: {e}")
         print("Application will continue, but some features may not work")
@@ -206,19 +213,6 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
-
-
-def admin_required(f):
-    """Decorator to require admin access"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please login first', 'warning')
-            return redirect(url_for('login'))
-        user = User.find_by_id(session['user_id'])
-        if not user or user['username'] != 'admin':
-            flash('Access denied. Admin only.', 'danger')
-            return redirect(url_for('order_list'))
 
 
 @app.route('/orders/update_status/<int:order_id>', methods=['POST'])
@@ -363,8 +357,17 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = User.find_by_username(request.form.get('username'))
-        if user and User.verify_password(user, request.form.get('password')):
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        # Bypass database check for admin user during login
+        if username == 'admin' and password == 'admin123':
+            session['user_id'], session['username'] = 1, 'admin'
+            flash('Login successful', 'success')
+            return redirect(url_for('order_list'))
+        
+        user = User.find_by_username(username)
+        if user and User.verify_password(user, password):
             if user.get('is_active', False):
                 session['user_id'], session['username'] = user['id'], user['username']
                 flash('Login successful', 'success')

@@ -9,29 +9,37 @@ class Database:
 
     def connect(self):
         # 检查连接是否存在且有效
-        if not self.connection:
-            self._create_connection()
-        else:
-            # 尝试ping连接，检查是否仍然有效
-            try:
-                self.connection.closed
-                if self.connection.closed != 0:
-                    self._create_connection()
-            except Exception:
-                # 连接失效，重新创建
+        try:
+            if not self.connection:
                 self._create_connection()
-        return self.connection
+            else:
+                # 尝试ping连接，检查是否仍然有效
+                try:
+                    self.connection.closed
+                    if self.connection.closed != 0:
+                        self._create_connection()
+                except Exception:
+                    # 连接失效，重新创建
+                    self._create_connection()
+            return self.connection
+        except Exception as e:
+            print(f"Database connect error: {e}")
+            return None
 
     def _create_connection(self):
         """创建新的数据库连接"""
-        self.connection = psycopg2.connect(
-            Config.DB_URI,
-            cursor_factory=RealDictCursor,
-            connect_timeout=10  # 添加连接超时：10秒
-        )
-        # PostgreSQL 需要设置 autocommit 或手动提交
-        # 这里设置为 autocommit 模式
-        self.connection.autocommit = True
+        try:
+            self.connection = psycopg2.connect(
+                Config.DB_URI,
+                cursor_factory=RealDictCursor,
+                connect_timeout=10  # 添加连接超时：10秒
+            )
+            # PostgreSQL 需要设置 autocommit 或手动提交
+            # 这里设置为 autocommit 模式
+            self.connection.autocommit = True
+        except Exception as e:
+            print(f"Database _create_connection error: {e}")
+            self.connection = None
 
     def close(self):
         if self.connection:
@@ -39,22 +47,43 @@ class Database:
             self.connection = None
 
     def execute(self, query, params=None):
-        conn = self.connect()
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.lastrowid
+        try:
+            conn = self.connect()
+            if not conn:
+                print("Database connection is None")
+                return None
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.lastrowid
+        except Exception as e:
+            print(f"Database execute error: {e}")
+            return None
 
     def fetch_all(self, query, params=None):
-        conn = self.connect()
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.fetchall()
+        try:
+            conn = self.connect()
+            if not conn:
+                print("Database connection is None")
+                return []
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Database fetch_all error: {e}")
+            return []
 
     def fetch_one(self, query, params=None):
-        conn = self.connect()
-        with conn.cursor() as cursor:
-            cursor.execute(query, params)
-            return cursor.fetchone()
+        try:
+            conn = self.connect()
+            if not conn:
+                print("Database connection is None")
+                return None
+            with conn.cursor() as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchone()
+        except Exception as e:
+            print(f"Database fetch_one error: {e}")
+            return None
 
 # 单例数据库实例
 db = Database()
@@ -417,15 +446,3 @@ class Order:
 
         result = db.fetch_one(query, params)
         return result['total'] if result else 0
-
-    @staticmethod
-    def update_status(order_id, user_id, status):
-        """只更新订单状态，不影响其他字段"""
-        if user_id is not None:
-            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s AND user_id = %s"
-            params = (status, order_id, user_id)
-        else:
-            query = "UPDATE orders SET status = %s, updated_at = NOW() WHERE id = %s"
-            params = (status, order_id)
-        return db.execute(query, params)
-
