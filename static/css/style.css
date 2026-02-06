@@ -749,6 +749,7 @@ input[type="file"].form-control {
 
 /* Print Styles */
 @media print {
+    .form-container{padding:0px}
     .v-h {
         display: none;
       
