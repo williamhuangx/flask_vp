@@ -12,7 +12,7 @@ body {
     color: #333;
 }
 
-@page {size: A4 inherit;margin: 2cm 1cm;counter-increment: page}
+@page {size: A4 inherit;margin: 1cm 0cm;counter-increment: page}
 
 /* Navbar */
 .navbar {
