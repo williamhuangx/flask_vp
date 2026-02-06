@@ -40,10 +40,10 @@
 
 <table class="tb3">
     <tr><td>KODE/GAMBAR</td><td colspan="2">BRAM/KARAT/INSTRUKSI</td></tr>
-    <tr><td rowspan="10" width=300px >
+    <tr><td rowspan="10" width=280px >
         {% if order.image_url %}
         <div id="currentImageDiv">
-            <img src="{{ order.image_url }}" alt="当前图片" onclick="replaceImage()" style="width: 300px;height: 210px" />
+            <img src="{{ order.image_url }}" alt="当前图片" onclick="replaceImage()" style="width: 280px;height: 200px" />
         </div>
         {% endif %}
         <div class="image-upload-area" id="uploadArea" {% if order.image_url %}style="display: none;"{% endif %}>
@@ -52,7 +52,7 @@
                    style="display: none;" onchange="previewImage(this, 'preview')">
         </div>
         <div id="preview" class="image-preview" style="display: none;">
-            <img src="" alt="预览" onclick="replaceImage()" style="width: 300px;height: 210px"  />
+            <img src="" alt="预览" onclick="replaceImage()" style="width: 280px;height: 200px"  />
         </div>
         <input type="hidden" id="delete_image" name="delete_image" value="0">
     </td>
