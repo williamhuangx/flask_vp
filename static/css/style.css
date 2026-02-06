@@ -389,7 +389,7 @@ body {
     background: white;
     padding: 40px;
     border-radius: 12px;
-    /* box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
     animation: fadeIn 0.3s ease-out;
 }
 
@@ -751,7 +751,7 @@ input[type="file"].form-control {
 
 /* Print Styles */
 @media print {
-    /* .form-container{padding:0px;background: white;animation: fadeIn 0.3s ease-out;} */
+    .form-container{padding:0px;box-shadow: none;}
     .v-h {display: none;}
 }
 
