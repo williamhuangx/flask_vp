@@ -751,7 +751,7 @@ input[type="file"].form-control {
 
 /* Print Styles */
 @media print {
-    .form-container{padding:0px;background: white;animation: fadeIn 0.3s ease-out;}
+    /* .form-container{padding:0px;background: white;animation: fadeIn 0.3s ease-out;} */
     .v-h {display: none;}
 }
 
